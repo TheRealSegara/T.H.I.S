@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>T.H.I.S. Assessment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Caveat:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app-frame">
+      <div id="app">
+        <div id="pupil-gate" class="pieces-bg">
+          <span class="deco-piece" style="top:-18px;left:-18px;font-size:52px;opacity:.32;transform:rotate(-12deg)" aria-hidden="true">🧩</span>
+          <span class="deco-piece" style="top:22px;right:-24px;font-size:42px;opacity:.26;transform:rotate(16deg)" aria-hidden="true">🧩</span>
+          <span class="deco-piece" style="bottom:70px;left:-24px;font-size:46px;opacity:.28;transform:rotate(9deg)" aria-hidden="true">🧩</span>
+          <span class="deco-piece" style="bottom:-14px;right:14px;font-size:38px;opacity:.24;transform:rotate(-18deg)" aria-hidden="true">🧩</span>
+
+          <div class="hero-wrap">
+            <span class="hero-icon" aria-hidden="true">
+              <span class="hero-piece" style="transform:rotate(-10deg)">🧩</span
+              ><span class="hero-piece" style="transform:rotate(10deg);margin-left:-0.2em">🧩</span>
+            </span>
+          </div>
+          <h1 class="brand-title">T.H.I.S. Assessment</h1>
+          <p class="brand-subtitle">b/d &middot; p/q Letter Assessment</p>
+          <p class="brand-tagline">Let's match some letters!</p>
+          <div class="gate-card">
+            <label for="pupil-input">Pupil name</label>
+            <input id="pupil-input" type="text" placeholder="e.g. Ali" autocomplete="off" />
+            <button id="pupil-start-btn" class="btn btn-primary">🧩 Start Matching</button>
+          </div>
+          <a id="gate-report-link" class="btn btn-outline btn-outline-secondary" href="#/report">📋 Teacher Report</a>
+          <p class="footnote-pill">🧑‍🏫 For use during class, with a teacher or coach nearby.</p>
+        </div>
+        <div id="session-view" class="pieces-bg" hidden>
+          <span class="deco-piece" style="top:-18px;left:-18px;font-size:52px;opacity:.32;transform:rotate(-12deg)" aria-hidden="true">🧩</span>
+          <span class="deco-piece" style="bottom:-14px;right:14px;font-size:42px;opacity:.26;transform:rotate(-18deg)" aria-hidden="true">🧩</span>
+          <div id="practice-view">
+            <div id="prompt-bar">
+              <span id="stage-label" class="stage-badge">Warm-up Pieces</span>
+              <span id="letter-label">Fit: b</span>
+              <span id="trace-progress" class="stage-badge" hidden></span>
+              <button id="next-btn" class="btn btn-primary" disabled>🧩 Fit Piece</button>
+            </div>
+            <div id="voice-bubble">
+              <span class="voice-icon" aria-hidden="true">🧩</span>
+              <span id="voice-text"></span>
+            </div>
+            <div id="piece-progress" aria-hidden="true"></div>
+            <canvas id="trace-canvas"></canvas>
+            <div id="word-cues" hidden></div>
+            <div id="debug-panel">
+              <span id="stroke-count">Strokes: 0</span>
+              <span id="point-count">Last stroke points: 0</span>
+              <button id="clear-btn" class="btn btn-outline btn-outline-muted">🔄 Try Again</button>
+            </div>
+          </div>
+          <div id="summary-view" hidden>
+            <div class="hero-wrap hero-wrap-sm">
+              <span class="hero-icon" aria-hidden="true">
+                <span class="hero-piece" style="transform:rotate(-10deg)">🧩</span
+                ><span class="hero-piece" style="transform:rotate(10deg);margin-left:-0.2em">🧩</span>
+              </span>
+            </div>
+            <h1>Pieces Fitted Today</h1>
+            <p class="brand-tagline">Great matching today!</p>
+            <ul id="summary-list"></ul>
+            <button id="new-session-btn" class="btn btn-primary">🧩 Match Again</button>
+            <a id="summary-report-link" class="btn btn-outline btn-outline-secondary" href="#">📋 View teacher report for this pupil</a>
+          </div>
+        </div>
+        <div id="report-view" class="pieces-bg" hidden>
+          <span class="deco-piece" style="top:-18px;left:-18px;font-size:52px;opacity:.32;transform:rotate(-12deg)" aria-hidden="true">🧩</span>
+          <span class="deco-piece" style="bottom:-14px;right:14px;font-size:42px;opacity:.26;transform:rotate(-18deg)" aria-hidden="true">🧩</span>
+          <div id="report-header">
+            <a id="report-back-link" href="#">⬅️ Back</a>
+            <h1>📋 Teacher Report</h1>
+          </div>
+          <p id="report-note">
+            No login, single device: this report reads whatever this tablet has recorded, so it's only reachable on
+            the same device the pupil practiced on.
+          </p>
+          <div id="report-pupil-list"></div>
+          <div id="report-pupil-detail" hidden></div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
