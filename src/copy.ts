@@ -1,18 +1,25 @@
 import type { SessionStage } from "./session-flow";
+import type { LetterId } from "./letters";
 
-// Building-blocks motif: session stages and prompts are framed as
-// constructing something, matching the physical letter blocks that are
-// the product's actual first phase (see CLAUDE.md) rather than a generic
-// UI vocabulary.
+// Puzzle-piece motif, matching the physical letter blocks: b/d interlock
+// as one pair, p/q interlock as the other, and each pair has its own
+// colour on the physical pieces (b/d blue, p/q pink) - see CLAUDE.md and
+// pairOf() below, which the UI colour-coding is driven from.
 export const STAGE_LABELS: Record<SessionStage, string> = {
-  warmup: "Warm-up Blocks",
-  "pair-bd": "b/d Block Match",
-  "pair-pq": "p/q Block Match",
-  resurface: "Extra Blocks",
-  "cross-mix": "Mixed Blocks",
-  summary: "Tower Complete",
+  warmup: "Warm-up Pieces",
+  "pair-bd": "b/d Piece Match",
+  "pair-pq": "p/q Piece Match",
+  resurface: "Extra Pieces",
+  "cross-mix": "Mixed Pieces",
+  summary: "Pieces Complete",
 };
 
 export function letterPrompt(letter: string): string {
-  return `Build: ${letter}`;
+  return `Fit: ${letter}`;
+}
+
+export type PairId = "bd" | "pq";
+
+export function pairOf(letter: LetterId): PairId {
+  return letter === "b" || letter === "d" ? "bd" : "pq";
 }

@@ -12,9 +12,11 @@
   --color-primary-dark: #c05f1e;
   --color-primary-tint: #fbe3d0;
 
-  --color-secondary: #4b6c8c;
-  --color-secondary-dark: #35506b;
-  --color-secondary-tint: #dce6ee;
+  /* Teacher/admin context. Deliberately not blue - blue is reserved for
+     the b/d puzzle-piece pair below, so the two meanings never collide. */
+  --color-secondary: #3f8f74;
+  --color-secondary-dark: #2c6b55;
+  --color-secondary-tint: #dcefe7;
 
   --color-neutral: #8b7e70;
   --color-neutral-dark: #6b5f53;
@@ -23,6 +25,18 @@
   --color-accent-yellow: #f0af1e;
   --color-accent-coral: #e85c4a;
   --color-accent-mint: #4fa184;
+
+  /* The physical letter blocks are colour-coded by pair - b/d pieces are
+     blue, p/q pieces are pink - and interlock like puzzle pieces within
+     a pair. The digital app mirrors that: whichever letter is currently
+     being traced tints the surrounding chrome by its pair. */
+  --color-pair-bd: #3e7cb8;
+  --color-pair-bd-dark: #2c5c8c;
+  --color-pair-bd-tint: #dceaf7;
+
+  --color-pair-pq: #d9639e;
+  --color-pair-pq-dark: #b3457d;
+  --color-pair-pq-tint: #fae1ee;
 
   /* Context accent: main pupil flow uses primary; #report-view (the
      "admin" mode) overrides this to secondary, so cards, links and the
@@ -69,15 +83,15 @@ a {
   font-weight: 700;
 }
 
-/* Ambient building-blocks watermark, tinted by the current context's
-   accent colour. Sits behind content via z-index:-1 on a positioned
-   parent - never intercepts clicks (decorative only). */
-.blocks-bg {
+/* Ambient puzzle-piece watermark, tinted by the current context's accent
+   colour. Sits behind content via z-index:-1 on a positioned parent -
+   never intercepts clicks (decorative only). */
+.pieces-bg {
   position: relative;
   isolation: isolate;
 }
 
-.blocks-bg::before {
+.pieces-bg::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -322,6 +336,7 @@ a {
   padding: 0.75rem 1rem;
   background: var(--color-primary-tint);
   font-size: 1rem;
+  transition: background 0.2s ease;
 }
 
 .stage-badge {
@@ -335,6 +350,7 @@ a {
   border-radius: var(--radius-pill);
   padding: 0.3rem 0.75rem;
   white-space: nowrap;
+  transition: color 0.2s ease;
 }
 
 #letter-label {
@@ -343,13 +359,44 @@ a {
   font-weight: 700;
   color: var(--color-ink);
   white-space: nowrap;
+  transition: color 0.2s ease;
 }
 
 #next-btn {
   margin-left: auto;
 }
 
-#block-progress {
+/* Whichever letter is currently being traced tints the prompt bar,
+   label, badge and button by its pair - b/d blue, p/q pink - matching
+   the colour-coded physical blocks. Toggled on #practice-view in
+   main.ts each time the prompt changes. */
+#practice-view.pair-bd #prompt-bar {
+  background: var(--color-pair-bd-tint);
+}
+
+#practice-view.pair-bd .stage-badge,
+#practice-view.pair-bd #letter-label {
+  color: var(--color-pair-bd-dark);
+}
+
+#practice-view.pair-bd #next-btn {
+  background: linear-gradient(180deg, var(--color-pair-bd) 0%, var(--color-pair-bd-dark) 100%);
+}
+
+#practice-view.pair-pq #prompt-bar {
+  background: var(--color-pair-pq-tint);
+}
+
+#practice-view.pair-pq .stage-badge,
+#practice-view.pair-pq #letter-label {
+  color: var(--color-pair-pq-dark);
+}
+
+#practice-view.pair-pq #next-btn {
+  background: linear-gradient(180deg, var(--color-pair-pq) 0%, var(--color-pair-pq-dark) 100%);
+}
+
+#piece-progress {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
@@ -357,12 +404,22 @@ a {
   min-height: 1.5rem;
 }
 
-.block-chip {
+.piece-chip {
   width: 1.1rem;
   height: 1.1rem;
   border-radius: 6px;
   background: var(--color-primary);
   box-shadow: 0 2px 0 var(--color-primary-dark);
+}
+
+.piece-chip.pair-bd {
+  background: var(--color-pair-bd);
+  box-shadow: 0 2px 0 var(--color-pair-bd-dark);
+}
+
+.piece-chip.pair-pq {
+  background: var(--color-pair-pq);
+  box-shadow: 0 2px 0 var(--color-pair-pq-dark);
 }
 
 #trace-canvas {
@@ -425,9 +482,17 @@ a {
   gap: 1rem;
   padding: 0.75rem 1rem;
   background: var(--color-surface);
-  border: 3px solid var(--color-primary);
+  border: 3px solid var(--color-neutral);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
+}
+
+.summary-row.pair-bd {
+  border-color: var(--color-pair-bd);
+}
+
+.summary-row.pair-pq {
+  border-color: var(--color-pair-pq);
 }
 
 .summary-letter {
@@ -435,7 +500,15 @@ a {
   font-size: 1.9rem;
   font-weight: 800;
   width: 2.2rem;
-  color: var(--color-primary-dark);
+  color: var(--color-neutral-dark);
+}
+
+.summary-row.pair-bd .summary-letter {
+  color: var(--color-pair-bd-dark);
+}
+
+.summary-row.pair-pq .summary-letter {
+  color: var(--color-pair-pq-dark);
 }
 
 .summary-details {
@@ -569,4 +642,14 @@ a {
   font-size: 0.9rem;
   color: var(--color-ink-soft);
   margin: 0.3rem 0;
+}
+
+.report-trend.pair-bd {
+  color: var(--color-pair-bd-dark);
+  font-weight: 700;
+}
+
+.report-trend.pair-pq {
+  color: var(--color-pair-pq-dark);
+  font-weight: 700;
 }

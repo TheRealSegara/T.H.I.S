@@ -15,28 +15,28 @@
   <body>
     <div id="app-frame">
       <div id="app">
-        <div id="pupil-gate" class="blocks-bg">
-          <span class="deco-corner deco-corner-tl" aria-hidden="true">🧱</span>
-          <span class="deco-corner deco-corner-br" aria-hidden="true">🧱</span>
-          <span class="hero-icon" aria-hidden="true">🧱</span>
+        <div id="pupil-gate" class="pieces-bg">
+          <span class="deco-corner deco-corner-tl" aria-hidden="true">🧩</span>
+          <span class="deco-corner deco-corner-br" aria-hidden="true">🧩</span>
+          <span class="hero-icon" aria-hidden="true">🧩</span>
           <h1 class="brand-title">T.H.I.S. Digital</h1>
-          <p class="brand-tagline">Let's build some letters!</p>
+          <p class="brand-tagline">Let's match some letters!</p>
           <div class="gate-card">
             <label for="pupil-input">Pupil name</label>
             <input id="pupil-input" type="text" placeholder="e.g. Ali" autocomplete="off" />
-            <button id="pupil-start-btn" class="btn btn-primary">🧱 Start Building</button>
+            <button id="pupil-start-btn" class="btn btn-primary">🧩 Start Matching</button>
           </div>
           <a id="gate-report-link" class="btn btn-outline btn-outline-secondary" href="#/report">📋 Teacher Report</a>
           <p class="footnote-pill">For use during class, with a teacher or coach nearby. 🧑‍🏫</p>
         </div>
-        <div id="session-view" class="blocks-bg" hidden>
+        <div id="session-view" class="pieces-bg" hidden>
           <div id="practice-view">
             <div id="prompt-bar">
-              <span id="stage-label" class="stage-badge">Warm-up Blocks</span>
-              <span id="letter-label">Build: b</span>
-              <button id="next-btn" class="btn btn-primary" disabled>➕ Add Block</button>
+              <span id="stage-label" class="stage-badge">Warm-up Pieces</span>
+              <span id="letter-label">Fit: b</span>
+              <button id="next-btn" class="btn btn-primary" disabled>🧩 Fit Piece</button>
             </div>
-            <div id="block-progress" aria-hidden="true"></div>
+            <div id="piece-progress" aria-hidden="true"></div>
             <canvas id="trace-canvas"></canvas>
             <div id="debug-panel">
               <span id="stroke-count">Strokes: 0</span>
@@ -45,17 +45,17 @@
             </div>
           </div>
           <div id="summary-view" hidden>
-            <span class="hero-icon hero-icon-sm" aria-hidden="true">🏗️</span>
-            <h1>Your Block Tower</h1>
-            <p class="brand-tagline">Nice building today!</p>
+            <span class="hero-icon hero-icon-sm" aria-hidden="true">🧩</span>
+            <h1>Pieces Fitted Today</h1>
+            <p class="brand-tagline">Great matching today!</p>
             <ul id="summary-list"></ul>
-            <button id="new-session-btn" class="btn btn-primary">🧱 Build Again</button>
+            <button id="new-session-btn" class="btn btn-primary">🧩 Match Again</button>
             <a id="summary-report-link" class="btn btn-outline btn-outline-secondary" href="#"
               >📋 View teacher report for this pupil</a
             >
           </div>
         </div>
-        <div id="report-view" class="blocks-bg" hidden>
+        <div id="report-view" class="pieces-bg" hidden>
           <div id="report-header">
             <a id="report-back-link" href="#">&larr; Back</a>
             <h1>📋 Teacher Report</h1>

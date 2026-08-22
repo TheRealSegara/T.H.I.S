@@ -13,7 +13,7 @@ import {
 } from "./persistence";
 import { buildSessionSummary, describeFlag, type SessionSummaryData } from "./session-summary";
 import { buildPupilReport, listPupilIds } from "./report";
-import { STAGE_LABELS, letterPrompt } from "./copy";
+import { STAGE_LABELS, letterPrompt, pairOf } from "./copy";
 import "./style.css";
 
 const pupilGate = document.getElementById("pupil-gate") as HTMLDivElement;
@@ -39,7 +39,7 @@ const nextBtn = document.getElementById("next-btn") as HTMLButtonElement;
 const strokeCountEl = document.getElementById("stroke-count") as HTMLSpanElement;
 const pointCountEl = document.getElementById("point-count") as HTMLSpanElement;
 const clearBtn = document.getElementById("clear-btn") as HTMLButtonElement;
-const blockProgressEl = document.getElementById("block-progress") as HTMLDivElement;
+const pieceProgressEl = document.getElementById("piece-progress") as HTMLDivElement;
 
 const lastPupil = getLastPupilId();
 if (lastPupil) pupilInput.value = lastPupil;
@@ -124,7 +124,7 @@ function renderPupilDetail(pupilId: string): void {
   lettersSection.append(lettersTitle);
   for (const entry of currentState.letters) {
     const p = document.createElement("p");
-    p.className = "report-trend";
+    p.className = `report-trend pair-${pairOf(entry.letter)}`;
     p.textContent = `${entry.letter}: ${entry.confidence === null ? "no data" : Math.round(entry.confidence * 100) + "%"} — ${describeFlag(entry.flag)}`;
     lettersSection.append(p);
   }
@@ -158,7 +158,7 @@ function renderSummary(summary: SessionSummaryData): void {
   summaryListEl.innerHTML = "";
   for (const entry of summary.letters) {
     const li = document.createElement("li");
-    li.className = "summary-row";
+    li.className = `summary-row pair-${pairOf(entry.letter)}`;
 
     const letterSpan = document.createElement("span");
     letterSpan.className = "summary-letter";
@@ -205,19 +205,19 @@ function startSession(pupilId: string): void {
     },
   });
 
-  let completedBlocks = 0;
+  const completedLetters: LetterId[] = [];
 
   function resetCounters(): void {
     strokeCountEl.textContent = "Strokes: 0";
     pointCountEl.textContent = "Last stroke points: 0";
   }
 
-  function renderBlockProgress(): void {
-    blockProgressEl.innerHTML = "";
-    for (let i = 0; i < completedBlocks; i++) {
+  function renderPieceProgress(): void {
+    pieceProgressEl.innerHTML = "";
+    for (const letter of completedLetters) {
       const chip = document.createElement("div");
-      chip.className = "block-chip";
-      blockProgressEl.append(chip);
+      chip.className = `piece-chip pair-${pairOf(letter)}`;
+      pieceProgressEl.append(chip);
     }
   }
 
@@ -259,6 +259,8 @@ function startSession(pupilId: string): void {
     const letter = flow.getCurrentLetter() as LetterId;
     stageEl.textContent = STAGE_LABELS[flow.getStage()];
     letterEl.textContent = letterPrompt(letter);
+    practiceView.classList.toggle("pair-bd", pairOf(letter) === "bd");
+    practiceView.classList.toggle("pair-pq", pairOf(letter) === "pq");
     capture.clear();
     capture.setGuide(LETTER_PATHS[letter], { width: GLYPH_WIDTH, height: GLYPH_HEIGHT });
     nextBtn.disabled = true;
@@ -267,10 +269,11 @@ function startSession(pupilId: string): void {
 
   nextBtn.addEventListener("click", () => {
     if (flow.isComplete()) return;
+    const justTracedLetter = flow.getCurrentLetter() as LetterId;
     const comparison = compareLetterAttempt(capture.getStrokes(), capture.getGuideInCanvasSpace());
     flow.submitAttempt(comparison);
-    completedBlocks++;
-    renderBlockProgress();
+    completedLetters.push(justTracedLetter);
+    renderPieceProgress();
     showCurrentPrompt();
   });
 
