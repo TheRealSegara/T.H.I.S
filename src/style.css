@@ -228,8 +228,27 @@ svg {
 
 .hero-icon {
   display: block;
-  margin: 0 auto 0.25rem;
+  margin: 0 auto;
   width: fit-content;
+}
+
+/* Confident colour backdrop behind the hero mark - a small icon
+   floating on the page background read as a favicon, not a hero. */
+.hero-wrap {
+  width: 152px;
+  height: 152px;
+  border-radius: 50%;
+  background: var(--color-primary-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.5rem;
+}
+
+.hero-wrap-sm {
+  width: 108px;
+  height: 108px;
+  margin-bottom: 0.25rem;
 }
 
 .brand-title {
@@ -263,7 +282,7 @@ svg {
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-primary-tint) 160%);
+  background: var(--color-primary-tint);
   border: 3px solid var(--color-primary);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
@@ -283,7 +302,7 @@ svg {
   border: 2px solid var(--color-neutral-tint);
   border-radius: 14px;
   width: min(16rem, 70vw);
-  background: var(--color-bg);
+  background: var(--color-surface);
   color: var(--color-ink);
 }
 
@@ -628,7 +647,7 @@ svg {
   font-family: var(--font-display);
   font-size: 1.1rem;
   padding: 0.85rem 1.1rem;
-  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-secondary-tint) 220%);
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-secondary-tint) 100%);
   border: 3px solid var(--color-secondary);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
@@ -637,7 +656,7 @@ svg {
 }
 
 .report-section {
-  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-secondary-tint) 220%);
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-secondary-tint) 100%);
   border: 3px solid var(--color-secondary);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
@@ -656,7 +675,7 @@ svg {
    per-letter confidence is at-a-glance stats (mint). */
 .report-section--pattern {
   border-color: var(--color-accent-coral);
-  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-accent-coral-tint) 220%);
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-accent-coral-tint) 100%);
 }
 
 .report-section--pattern h2 {
@@ -665,7 +684,7 @@ svg {
 
 .report-section--stats {
   border-color: var(--color-accent-mint);
-  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-accent-mint-tint) 220%);
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-accent-mint-tint) 100%);
 }
 
 .report-section--stats h2 {
