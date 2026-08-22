@@ -93,28 +93,14 @@ a {
   isolation: isolate;
 }
 
-/* Each instance is one scattered decoration, positioned/rotated/coloured
-   per-instance via an inline style in index.html - varied size, colour
-   and placement instead of one uniform repeating tile. */
+/* Each instance is one scattered 🧩, positioned/sized/rotated per-instance
+   via an inline style in index.html - varied size and placement instead
+   of one uniform repeating tile. */
 .deco-piece {
   position: absolute;
   pointer-events: none;
   z-index: -1;
-}
-
-/* Inline icons get consistent baseline alignment and spacing before
-   their following label text; decorative/standalone icons (hero mark,
-   scattered background pieces) opt back out since they're not sitting
-   next to text. */
-svg {
-  vertical-align: -0.15em;
-  margin-right: 0.4em;
-}
-
-.hero-icon svg,
-.deco-piece svg {
-  margin-right: 0;
-  vertical-align: baseline;
+  line-height: 1;
 }
 
 #app {
@@ -230,6 +216,13 @@ svg {
   display: block;
   margin: 0 auto;
   width: fit-content;
+  font-size: 4.5rem;
+  line-height: 1;
+  filter: drop-shadow(0 3px 2px rgba(42, 31, 20, 0.35));
+}
+
+.hero-piece {
+  display: inline-block;
 }
 
 /* Confident colour backdrop behind the hero mark - a small icon
@@ -251,9 +244,23 @@ svg {
   margin-bottom: 0.25rem;
 }
 
+.hero-wrap-sm .hero-icon {
+  font-size: 3.2rem;
+}
+
 .brand-title {
   font-size: 2rem;
   margin: 0;
+}
+
+.brand-subtitle {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-soft);
+  margin: 0.15rem 0 0;
 }
 
 .brand-tagline {
