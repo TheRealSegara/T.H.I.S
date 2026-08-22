@@ -485,6 +485,38 @@ a {
   background: var(--color-surface);
 }
 
+/* Warm-up only: picture-word cues connecting the letter to real words,
+   mirroring the physical Development Sheet's row of pictures at the
+   bottom of the page. */
+#word-cues:not([hidden]) {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 0.6rem 1rem;
+  background: var(--color-primary-tint);
+  border-top: 2px solid var(--color-primary);
+}
+
+.word-cue {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  font-family: var(--font-body);
+}
+
+.word-cue-emoji {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.word-cue-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+  text-transform: lowercase;
+}
+
 #debug-panel {
   display: flex;
   gap: 1rem;

@@ -17,6 +17,27 @@ export interface GuideBounds {
   height: number;
 }
 
+// Fading-guidance levels for the warm-up "Development Sheet" sequence:
+// each letter is traced 5 times, from fully dotted arrows down to a
+// near-independent outline, before the pupil moves to the next letter.
+// Levels are purely a rendering concern (dash density + opacity on the
+// same reference geometry) - no new letter-path data is needed.
+export const GUIDANCE_LEVEL_COUNT = 5;
+
+interface GuidanceStyle {
+  dash: [number, number];
+  opacity: number;
+  showArrow: boolean;
+}
+
+const GUIDANCE_STYLES: GuidanceStyle[] = [
+  { dash: [3, 3], opacity: 1.0, showArrow: true }, // fully dotted arrows
+  { dash: [4, 5], opacity: 0.8, showArrow: true },
+  { dash: [5, 7], opacity: 0.6, showArrow: false },
+  { dash: [7, 10], opacity: 0.4, showArrow: false },
+  { dash: [9, 15], opacity: 0.22, showArrow: false }, // near-independent outline
+];
+
 /**
  * Captures finger-touch strokes on a canvas as ordered {x, y, timestamp} points.
  * Mouse events are also handled so the canvas can be exercised during desktop
@@ -30,6 +51,7 @@ export class StrokeCapture {
   private options: StrokeCaptureOptions;
   private guideStrokes: GuideStroke[] = [];
   private guideBounds: GuideBounds = { width: 1, height: 1 };
+  private guideLevel = 0;
 
   constructor(canvas: HTMLCanvasElement, options: StrokeCaptureOptions = {}) {
     this.canvas = canvas;
@@ -56,9 +78,11 @@ export class StrokeCapture {
     return this.strokes;
   }
 
-  setGuide(strokes: GuideStroke[], bounds: GuideBounds): void {
+  /** `level` (0..GUIDANCE_LEVEL_COUNT-1) fades the guide from fully dotted (0) to a near-independent outline (last) - defaults to full guidance for the normal single-trace stages. */
+  setGuide(strokes: GuideStroke[], bounds: GuideBounds, level = 0): void {
     this.guideStrokes = strokes;
     this.guideBounds = bounds;
+    this.guideLevel = Math.min(Math.max(level, 0), GUIDANCE_STYLES.length - 1);
     this.redraw();
   }
 
@@ -161,15 +185,39 @@ export class StrokeCapture {
     return this.guideStrokes.map((stroke) => stroke.map((p) => this.mapGuidePoint(p, scale, offsetX, offsetY)));
   }
 
+  private drawGuideArrow(stroke: GuideStroke, scale: number, offsetX: number, offsetY: number): void {
+    if (stroke.length < 2) return;
+    const mid = Math.floor(stroke.length / 2);
+    const a = this.mapGuidePoint(stroke[Math.max(0, mid - 1)], scale, offsetX, offsetY);
+    const b = this.mapGuidePoint(stroke[Math.min(stroke.length - 1, mid + 1)], scale, offsetX, offsetY);
+    const angle = Math.atan2(b.y - a.y, b.x - a.x);
+    const cx = (a.x + b.x) / 2;
+    const cy = (a.y + b.y) / 2;
+    const size = 7;
+
+    this.ctx.save();
+    this.ctx.translate(cx, cy);
+    this.ctx.rotate(angle);
+    this.ctx.beginPath();
+    this.ctx.moveTo(size, 0);
+    this.ctx.lineTo(-size * 0.6, size * 0.6);
+    this.ctx.lineTo(-size * 0.6, -size * 0.6);
+    this.ctx.closePath();
+    this.ctx.fill();
+    this.ctx.restore();
+  }
+
   private drawGuide(): void {
     if (this.guideStrokes.length === 0) return;
 
     const { scale, offsetX, offsetY } = this.computeGuideTransform();
+    const style = GUIDANCE_STYLES[this.guideLevel];
 
     this.ctx.save();
+    this.ctx.globalAlpha = style.opacity;
     this.ctx.strokeStyle = "#c9c2b2";
     this.ctx.lineWidth = 3;
-    this.ctx.setLineDash([6, 8]);
+    this.ctx.setLineDash(style.dash);
     for (const stroke of this.guideStrokes) {
       this.ctx.beginPath();
       stroke.forEach((p, i) => {
@@ -191,6 +239,13 @@ export class StrokeCapture {
       this.ctx.arc(start.x, start.y, 5, 0, Math.PI * 2);
       this.ctx.fill();
     }
+
+    // The most-guided levels also get a mid-stroke arrowhead - the
+    // "textured arrows" cue from the physical Development Sheet.
+    if (style.showArrow) {
+      for (const stroke of this.guideStrokes) this.drawGuideArrow(stroke, scale, offsetX, offsetY);
+    }
+
     this.ctx.restore();
   }
 

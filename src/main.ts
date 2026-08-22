@@ -1,4 +1,4 @@
-import { StrokeCapture } from "./stroke-capture";
+import { StrokeCapture, GUIDANCE_LEVEL_COUNT } from "./stroke-capture";
 import { LETTER_PATHS, GLYPH_WIDTH, GLYPH_HEIGHT, type LetterId } from "./letters";
 import { compareLetterAttempt } from "./stroke-comparison";
 import { ConfidenceTracker } from "./confidence";
@@ -14,6 +14,7 @@ import {
 import { buildSessionSummary, describeFlag, type SessionSummaryData } from "./session-summary";
 import { buildPupilReport, listPupilIds } from "./report";
 import { STAGE_LABELS, STAGE_VOICE_LINES, letterPrompt, pairOf } from "./copy";
+import { LETTER_WORD_CUES } from "./word-cues";
 import type { SessionStage } from "./session-flow";
 import "./style.css";
 
@@ -42,6 +43,8 @@ const pointCountEl = document.getElementById("point-count") as HTMLSpanElement;
 const clearBtn = document.getElementById("clear-btn") as HTMLButtonElement;
 const pieceProgressEl = document.getElementById("piece-progress") as HTMLDivElement;
 const voiceTextEl = document.getElementById("voice-text") as HTMLSpanElement;
+const traceProgressEl = document.getElementById("trace-progress") as HTMLSpanElement;
+const wordCuesEl = document.getElementById("word-cues") as HTMLDivElement;
 
 const lastPupil = getLastPupilId();
 if (lastPupil) pupilInput.value = lastPupil;
@@ -61,6 +64,10 @@ pupilStartBtn.addEventListener("click", async () => {
     sessionView.hidden = false;
     practiceView.hidden = false;
     summaryView.hidden = true;
+    // The canvas is constructed inside startSession(), while #session-view
+    // is still hidden, so its initial getBoundingClientRect() is 0x0.
+    // Nudge the resize listener now that the view is actually visible.
+    window.dispatchEvent(new Event("resize"));
   } catch (err) {
     console.error("Could not start session:", err);
     alert("Couldn't reach the server to start this session. Check the connection and try again.");
@@ -243,10 +250,47 @@ async function startSession(pupilId: string): Promise<void> {
   const completedLetters: LetterId[] = [];
   let lastVoiceStage: SessionStage | null = null;
 
+  // Warm-up "Development Sheet" replacement: each letter is traced
+  // GUIDANCE_LEVEL_COUNT times with fading guidance before moving to the
+  // next letter. Only the final (least-guided) trace is ever scored -
+  // see the nextBtn handler below - so the heavily-scaffolded early
+  // traces can't inflate confidence just for being nearly unmissable.
+  // Pair-discrimination and cross-mix stay single-trace, full-guide, as
+  // before; this only changes warm-up.
+  let warmupTraceIndex = 0;
+
+  function isFinalWarmupTrace(): boolean {
+    return warmupTraceIndex >= GUIDANCE_LEVEL_COUNT - 1;
+  }
+
   function updateVoiceLine(stage: SessionStage): void {
     if (stage === lastVoiceStage) return;
     lastVoiceStage = stage;
     voiceTextEl.textContent = STAGE_VOICE_LINES[stage];
+  }
+
+  function renderWordCues(letter: LetterId): void {
+    wordCuesEl.innerHTML = "";
+    for (const cue of LETTER_WORD_CUES[letter]) {
+      const chip = document.createElement("div");
+      chip.className = "word-cue";
+      const emoji = document.createElement("span");
+      emoji.className = "word-cue-emoji";
+      emoji.textContent = cue.emoji;
+      const label = document.createElement("span");
+      label.className = "word-cue-label";
+      label.textContent = cue.word;
+      chip.append(emoji, label);
+      wordCuesEl.append(chip);
+    }
+  }
+
+  function updateWarmupUi(letter: LetterId, isWarmup: boolean): void {
+    wordCuesEl.hidden = !isWarmup;
+    traceProgressEl.hidden = !isWarmup;
+    if (!isWarmup) return;
+    renderWordCues(letter);
+    traceProgressEl.textContent = `Trace ${warmupTraceIndex + 1} of ${GUIDANCE_LEVEL_COUNT}`;
   }
 
   function resetCounters(): void {
@@ -316,23 +360,41 @@ async function startSession(pupilId: string): Promise<void> {
 
     const letter = flow.getCurrentLetter() as LetterId;
     const stage = flow.getStage();
+    const isWarmup = stage === "warmup";
     stageEl.textContent = STAGE_LABELS[stage];
     updateVoiceLine(stage);
     letterEl.textContent = letterPrompt(letter);
     practiceView.classList.toggle("pair-bd", pairOf(letter) === "bd");
     practiceView.classList.toggle("pair-pq", pairOf(letter) === "pq");
+    warmupTraceIndex = 0; // fresh (possibly new) letter always starts at the most-guided level
     capture.clear();
-    capture.setGuide(LETTER_PATHS[letter], { width: GLYPH_WIDTH, height: GLYPH_HEIGHT });
+    capture.setGuide(LETTER_PATHS[letter], { width: GLYPH_WIDTH, height: GLYPH_HEIGHT }, isWarmup ? warmupTraceIndex : 0);
+    updateWarmupUi(letter, isWarmup);
     nextBtn.disabled = true;
     resetCounters();
   }
 
   nextBtn.addEventListener("click", () => {
     if (flow.isComplete()) return;
-    const justTracedLetter = flow.getCurrentLetter() as LetterId;
+    const currentLetter = flow.getCurrentLetter() as LetterId;
+    const stage = flow.getStage();
+
+    if (stage === "warmup" && !isFinalWarmupTrace()) {
+      // Practice repetition within the same letter: fade the guidance
+      // one level and let the pupil trace again. Never touches the flow
+      // queue or the confidence tracker - only the final trace below does.
+      warmupTraceIndex++;
+      capture.clear();
+      capture.setGuide(LETTER_PATHS[currentLetter], { width: GLYPH_WIDTH, height: GLYPH_HEIGHT }, warmupTraceIndex);
+      updateWarmupUi(currentLetter, true);
+      nextBtn.disabled = true;
+      resetCounters();
+      return;
+    }
+
     const comparison = compareLetterAttempt(capture.getStrokes(), capture.getGuideInCanvasSpace());
     flow.submitAttempt(comparison);
-    completedLetters.push(justTracedLetter);
+    completedLetters.push(currentLetter);
     renderPieceProgress();
     void showCurrentPrompt();
   });
