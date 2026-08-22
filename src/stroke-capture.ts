@@ -144,9 +144,7 @@ export class StrokeCapture {
     return { x: offsetX + p.x * scale, y: offsetY + p.y * scale };
   }
 
-  private drawGuide(): void {
-    if (this.guideStrokes.length === 0) return;
-
+  private computeGuideTransform(): { scale: number; offsetX: number; offsetY: number } {
     const rect = this.canvas.getBoundingClientRect();
     const paddingRatio = 0.15;
     const availW = rect.width * (1 - paddingRatio * 2);
@@ -154,8 +152,19 @@ export class StrokeCapture {
     const scale = Math.min(availW / this.guideBounds.width, availH / this.guideBounds.height);
     const glyphW = this.guideBounds.width * scale;
     const glyphH = this.guideBounds.height * scale;
-    const offsetX = (rect.width - glyphW) / 2;
-    const offsetY = (rect.height - glyphH) / 2;
+    return { scale, offsetX: (rect.width - glyphW) / 2, offsetY: (rect.height - glyphH) / 2 };
+  }
+
+  /** Guide strokes mapped into the same canvas pixel space the pupil draws in. */
+  getGuideInCanvasSpace(): GuideStroke[] {
+    const { scale, offsetX, offsetY } = this.computeGuideTransform();
+    return this.guideStrokes.map((stroke) => stroke.map((p) => this.mapGuidePoint(p, scale, offsetX, offsetY)));
+  }
+
+  private drawGuide(): void {
+    if (this.guideStrokes.length === 0) return;
+
+    const { scale, offsetX, offsetY } = this.computeGuideTransform();
 
     this.ctx.save();
     this.ctx.strokeStyle = "#c9c2b2";
