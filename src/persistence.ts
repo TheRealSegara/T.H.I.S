@@ -1,5 +1,6 @@
 import type { LetterId } from "./letters";
 import type { LetterConfidenceState, ConfidenceFlag } from "./confidence";
+import { requireSupabase } from "./supabase-client";
 
 export const ALL_LETTERS: LetterId[] = ["b", "d", "p", "q"];
 
@@ -26,32 +27,44 @@ export interface PupilData {
   sessionLog: SessionSummaryRecord[];
 }
 
-const STORAGE_PREFIX = "this-digital:pupil:";
-const PUPIL_INDEX_KEY = "this-digital:pupils";
+// Pupil data lives in Supabase (table: pupils) so the teacher report can be
+// reached from any device, not just the one the pupil practiced on. Only
+// the last-typed pupil name (a pure prefill convenience, not data of
+// record) still lives in localStorage - it's meaningless without a device
+// anyway, and keeping it there avoids a network round trip just to
+// pre-fill a text box.
 const LAST_PUPIL_KEY = "this-digital:last-pupil";
 const SESSION_LOG_LIMIT = 20;
 
-function storageKey(pupilId: string): string {
-  return `${STORAGE_PREFIX}${pupilId}`;
+interface PupilRow {
+  pupil_id: string;
+  session_count: number;
+  last_session_at: string | null;
+  letters: PupilData["letters"];
+  session_log: SessionSummaryRecord[];
+}
+
+function rowToPupilData(row: PupilRow): PupilData {
+  return {
+    pupilId: row.pupil_id,
+    sessionCount: row.session_count,
+    lastSessionAt: row.last_session_at ? new Date(row.last_session_at).getTime() : null,
+    letters: row.letters ?? {},
+    sessionLog: row.session_log ?? [],
+  };
 }
 
 function emptyPupilData(pupilId: string): PupilData {
   return { pupilId, sessionCount: 0, lastSessionAt: null, letters: {}, sessionLog: [] };
 }
 
-export function listPupils(): string[] {
-  try {
-    const raw = localStorage.getItem(PUPIL_INDEX_KEY);
-    return raw ? (JSON.parse(raw) as string[]) : [];
-  } catch {
+export async function listPupils(): Promise<string[]> {
+  const { data, error } = await requireSupabase().from("pupils").select("pupil_id").order("updated_at", { ascending: false });
+  if (error) {
+    console.error("listPupils failed:", error.message);
     return [];
   }
-}
-
-function saveIndex(pupilId: string): void {
-  const pupils = new Set(listPupils());
-  pupils.add(pupilId);
-  localStorage.setItem(PUPIL_INDEX_KEY, JSON.stringify([...pupils]));
+  return data.map((row) => row.pupil_id);
 }
 
 export function getLastPupilId(): string | null {
@@ -62,21 +75,43 @@ export function getLastPupilId(): string | null {
   }
 }
 
-export function loadPupilData(pupilId: string): PupilData {
+function setLastPupilId(pupilId: string): void {
   try {
-    const raw = localStorage.getItem(storageKey(pupilId));
-    if (raw) return JSON.parse(raw) as PupilData;
+    localStorage.setItem(LAST_PUPIL_KEY, pupilId);
   } catch {
-    // Corrupt or inaccessible storage - fall through to a fresh profile
-    // rather than blocking the pupil from a session.
+    // Best-effort convenience only - a blocked/full localStorage
+    // shouldn't stop a session from starting.
   }
-  return emptyPupilData(pupilId);
 }
 
-export function savePupilData(data: PupilData): void {
-  saveIndex(data.pupilId);
-  localStorage.setItem(LAST_PUPIL_KEY, data.pupilId);
-  localStorage.setItem(storageKey(data.pupilId), JSON.stringify(data));
+export async function loadPupilData(pupilId: string): Promise<PupilData> {
+  const { data, error } = await requireSupabase().from("pupils").select("*").eq("pupil_id", pupilId).maybeSingle();
+  if (error) {
+    console.error("loadPupilData failed, starting fresh:", error.message);
+    return emptyPupilData(pupilId);
+  }
+  return data ? rowToPupilData(data as PupilRow) : emptyPupilData(pupilId);
+}
+
+export async function savePupilData(data: PupilData): Promise<void> {
+  setLastPupilId(data.pupilId);
+
+  const row = {
+    pupil_id: data.pupilId,
+    session_count: data.sessionCount,
+    last_session_at: data.lastSessionAt ? new Date(data.lastSessionAt).toISOString() : null,
+    letters: data.letters,
+    session_log: data.sessionLog,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await requireSupabase().from("pupils").upsert(row, { onConflict: "pupil_id" });
+  if (error) {
+    // Surfaced to the caller rather than swallowed: losing a session's
+    // results silently would be worse than a visible error, since there's
+    // no local fallback copy once persistence itself is the network call.
+    throw new Error(`Could not save session results: ${error.message}`);
+  }
 }
 
 /** Whether any letter ended last session with confidence lower than that session started with. Feeds the warm-up/skip decision (Phase 5). */

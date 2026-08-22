@@ -46,14 +46,28 @@ const voiceTextEl = document.getElementById("voice-text") as HTMLSpanElement;
 const lastPupil = getLastPupilId();
 if (lastPupil) pupilInput.value = lastPupil;
 
-pupilStartBtn.addEventListener("click", () => {
+const START_BTN_DEFAULT_TEXT = pupilStartBtn.innerHTML;
+
+pupilStartBtn.addEventListener("click", async () => {
   const pupilId = pupilInput.value.trim();
   if (!pupilId) return;
-  pupilGate.hidden = true;
-  sessionView.hidden = false;
-  practiceView.hidden = false;
-  summaryView.hidden = true;
-  startSession(pupilId);
+
+  pupilStartBtn.disabled = true;
+  pupilStartBtn.textContent = "Loading…";
+
+  try {
+    await startSession(pupilId);
+    pupilGate.hidden = true;
+    sessionView.hidden = false;
+    practiceView.hidden = false;
+    summaryView.hidden = true;
+  } catch (err) {
+    console.error("Could not start session:", err);
+    alert("Couldn't reach the server to start this session. Check the connection and try again.");
+  } finally {
+    pupilStartBtn.disabled = false;
+    pupilStartBtn.innerHTML = START_BTN_DEFAULT_TEXT;
+  }
 });
 
 newSessionBtn.addEventListener("click", () => {
@@ -66,15 +80,24 @@ function parseReportRoute(hash: string): { pupilId: string | null } | null {
   return { pupilId: match[1] ? decodeURIComponent(match[1]) : null };
 }
 
-function renderPupilList(): void {
+async function renderPupilList(): Promise<void> {
   reportPupilDetail.hidden = true;
   reportPupilList.hidden = false;
-  reportPupilList.innerHTML = "";
+  reportPupilList.innerHTML = "<p>Loading…</p>";
 
-  const pupils = listPupilIds();
+  let pupils: string[];
+  try {
+    pupils = await listPupilIds();
+  } catch (err) {
+    console.error("Could not load pupil list:", err);
+    reportPupilList.innerHTML = "<p>Couldn't reach the server to load pupils. Check the connection and try again.</p>";
+    return;
+  }
+
+  reportPupilList.innerHTML = "";
   if (pupils.length === 0) {
     const p = document.createElement("p");
-    p.textContent = "No pupils recorded on this device yet.";
+    p.textContent = "No pupils recorded yet.";
     reportPupilList.append(p);
     return;
   }
@@ -91,12 +114,22 @@ function renderPupilList(): void {
   reportPupilList.append(ul);
 }
 
-function renderPupilDetail(pupilId: string): void {
+async function renderPupilDetail(pupilId: string): Promise<void> {
   reportPupilList.hidden = true;
   reportPupilDetail.hidden = false;
-  reportPupilDetail.innerHTML = "";
+  reportPupilDetail.innerHTML = "<p>Loading report…</p>";
 
-  const { pupilData, currentState, note } = buildPupilReport(pupilId);
+  let report: Awaited<ReturnType<typeof buildPupilReport>>;
+  try {
+    report = await buildPupilReport(pupilId);
+  } catch (err) {
+    console.error("Could not load report:", err);
+    reportPupilDetail.innerHTML = "<p>Couldn't reach the server to load this report. Check the connection and try again.</p>";
+    return;
+  }
+
+  const { pupilData, currentState, note } = report;
+  reportPupilDetail.innerHTML = "";
 
   const heading = document.createElement("h2");
   heading.textContent = `${pupilId} — ${pupilData.sessionCount} session${pupilData.sessionCount === 1 ? "" : "s"}`;
@@ -143,8 +176,8 @@ function renderRoute(): void {
     reportView.hidden = false;
     reportBackLink.href = route.pupilId ? "#/report" : "#";
 
-    if (route.pupilId) renderPupilDetail(route.pupilId);
-    else renderPupilList();
+    if (route.pupilId) void renderPupilDetail(route.pupilId);
+    else void renderPupilList();
     return;
   }
 
@@ -184,8 +217,8 @@ function renderSummary(summary: SessionSummaryData): void {
   }
 }
 
-function startSession(pupilId: string): void {
-  const pupilData = loadPupilData(pupilId);
+async function startSession(pupilId: string): Promise<void> {
+  const pupilData = await loadPupilData(pupilId);
   const isFirstSession = pupilData.sessionCount === 0;
   const confidenceDropped = confidenceDroppedLastSession(pupilData);
 
@@ -230,7 +263,7 @@ function startSession(pupilId: string): void {
     }
   }
 
-  function finalizeSession(): SessionSummaryData {
+  async function finalizeSession(): Promise<{ summary: SessionSummaryData; saveError: boolean }> {
     const summary = buildSessionSummary(pupilId, pupilData.sessionCount + 1, tracker);
 
     const letters: typeof pupilData.letters = {};
@@ -241,27 +274,43 @@ function startSession(pupilId: string): void {
       letters[letter] = { ...state, endedSessionBelowStart } satisfies PersistedLetterState;
     }
 
-    savePupilData({
-      pupilId,
-      sessionCount: pupilData.sessionCount + 1,
-      lastSessionAt: Date.now(),
-      letters,
-      sessionLog: [
-        ...pupilData.sessionLog,
-        { completedAt: Date.now(), letters: Object.fromEntries(summary.letters.map((e) => [e.letter, { confidence: e.confidence, flag: e.flag }])) },
-      ].slice(-20),
-    });
+    let saveError = false;
+    try {
+      await savePupilData({
+        pupilId,
+        sessionCount: pupilData.sessionCount + 1,
+        lastSessionAt: Date.now(),
+        letters,
+        sessionLog: [
+          ...pupilData.sessionLog,
+          { completedAt: Date.now(), letters: Object.fromEntries(summary.letters.map((e) => [e.letter, { confidence: e.confidence, flag: e.flag }])) },
+        ].slice(-20),
+      });
+    } catch (err) {
+      // Still show the pupil their results even if the save failed - losing
+      // the on-screen summary on top of a failed save would be worse, and
+      // the confidence numbers computed above are correct either way.
+      console.error(err);
+      saveError = true;
+    }
 
-    return summary;
+    return { summary, saveError };
   }
 
-  function showCurrentPrompt(): void {
+  async function showCurrentPrompt(): Promise<void> {
     if (flow.isComplete()) {
-      const summary = finalizeSession();
+      nextBtn.disabled = true;
+      const { summary, saveError } = await finalizeSession();
       practiceView.hidden = true;
       summaryView.hidden = false;
       summaryReportLink.href = `#/report/${encodeURIComponent(pupilId)}`;
       renderSummary(summary);
+      if (saveError) {
+        const warning = document.createElement("p");
+        warning.className = "footnote-pill";
+        warning.textContent = "⚠️ Couldn't save these results to the server - check the connection. Your progress on this device is shown above but may not appear in the teacher report.";
+        summaryListEl.insertAdjacentElement("afterend", warning);
+      }
       return;
     }
 
@@ -285,7 +334,7 @@ function startSession(pupilId: string): void {
     flow.submitAttempt(comparison);
     completedLetters.push(justTracedLetter);
     renderPieceProgress();
-    showCurrentPrompt();
+    void showCurrentPrompt();
   });
 
   clearBtn.addEventListener("click", () => {
@@ -294,5 +343,5 @@ function startSession(pupilId: string): void {
     nextBtn.disabled = true;
   });
 
-  showCurrentPrompt();
+  await showCurrentPrompt();
 }
