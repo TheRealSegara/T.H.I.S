@@ -24,7 +24,9 @@
 
   --color-accent-yellow: #f0af1e;
   --color-accent-coral: #e85c4a;
+  --color-accent-coral-tint: #fbe1dc;
   --color-accent-mint: #4fa184;
+  --color-accent-mint-tint: #e0f0e9;
 
   /* The physical letter blocks are colour-coded by pair - b/d pieces are
      blue, p/q pieces are pink - and interlock like puzzle pieces within
@@ -83,27 +85,36 @@ a {
   font-weight: 700;
 }
 
-/* Ambient puzzle-piece watermark, tinted by the current context's accent
-   colour. Sits behind content via z-index:-1 on a positioned parent -
-   never intercepts clicks (decorative only). */
+/* Decorative scattered puzzle pieces (see .deco-piece below) sit behind
+   content via z-index:-1 on a positioned, isolated parent - never
+   intercept clicks. */
 .pieces-bg {
   position: relative;
   isolation: isolate;
 }
 
-.pieces-bg::before {
-  content: "";
+/* Each instance is one scattered decoration, positioned/rotated/coloured
+   per-instance via an inline style in index.html - varied size, colour
+   and placement instead of one uniform repeating tile. */
+.deco-piece {
   position: absolute;
-  inset: 0;
+  pointer-events: none;
   z-index: -1;
-  opacity: 0.05;
-  background-color: var(--color-accent);
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Crect x='10' y='10' width='52' height='52' rx='14' fill='none' stroke='black' stroke-width='6'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Crect x='10' y='10' width='52' height='52' rx='14' fill='none' stroke='black' stroke-width='6'/%3E%3C/svg%3E");
-  -webkit-mask-repeat: repeat;
-  mask-repeat: repeat;
-  -webkit-mask-size: 72px 72px;
-  mask-size: 72px 72px;
+}
+
+/* Inline icons get consistent baseline alignment and spacing before
+   their following label text; decorative/standalone icons (hero mark,
+   scattered background pieces) opt back out since they're not sitting
+   next to text. */
+svg {
+  vertical-align: -0.15em;
+  margin-right: 0.4em;
+}
+
+.hero-icon svg,
+.deco-piece svg {
+  margin-right: 0;
+  vertical-align: baseline;
 }
 
 #app {
@@ -216,34 +227,9 @@ a {
 }
 
 .hero-icon {
-  font-size: 3rem;
-  line-height: 1;
-  margin-bottom: 0.25rem;
-}
-
-.hero-icon-sm {
-  font-size: 2.25rem;
-}
-
-.deco-corner {
-  position: absolute;
-  font-size: 6rem;
-  line-height: 1;
-  opacity: 0.08;
-  pointer-events: none;
-  z-index: -1;
-}
-
-.deco-corner-tl {
-  top: -1.5rem;
-  left: -1.5rem;
-  transform: rotate(-15deg);
-}
-
-.deco-corner-br {
-  bottom: -1.5rem;
-  right: -1.5rem;
-  transform: rotate(12deg);
+  display: block;
+  margin: 0 auto 0.25rem;
+  width: fit-content;
 }
 
 .brand-title {
@@ -277,7 +263,7 @@ a {
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  background: var(--color-surface);
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-primary-tint) 160%);
   border: 3px solid var(--color-primary);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
@@ -489,10 +475,12 @@ a {
 
 .summary-row.pair-bd {
   border-color: var(--color-pair-bd);
+  background: var(--color-pair-bd-tint);
 }
 
 .summary-row.pair-pq {
   border-color: var(--color-pair-pq);
+  background: var(--color-pair-pq-tint);
 }
 
 .summary-letter {
@@ -596,7 +584,7 @@ a {
   font-family: var(--font-display);
   font-size: 1.1rem;
   padding: 0.85rem 1.1rem;
-  background: var(--color-surface);
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-secondary-tint) 220%);
   border: 3px solid var(--color-secondary);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
@@ -605,7 +593,7 @@ a {
 }
 
 .report-section {
-  background: var(--color-surface);
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-secondary-tint) 220%);
   border: 3px solid var(--color-secondary);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
@@ -624,6 +612,7 @@ a {
    per-letter confidence is at-a-glance stats (mint). */
 .report-section--pattern {
   border-color: var(--color-accent-coral);
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-accent-coral-tint) 220%);
 }
 
 .report-section--pattern h2 {
@@ -632,6 +621,7 @@ a {
 
 .report-section--stats {
   border-color: var(--color-accent-mint);
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-accent-mint-tint) 220%);
 }
 
 .report-section--stats h2 {

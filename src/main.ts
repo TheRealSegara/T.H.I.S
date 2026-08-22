@@ -14,6 +14,7 @@ import {
 import { buildSessionSummary, describeFlag, type SessionSummaryData } from "./session-summary";
 import { buildPupilReport, listPupilIds } from "./report";
 import { STAGE_LABELS, letterPrompt, pairOf } from "./copy";
+import { ICON_PERSON, ICON_TARGET, ICON_CHART } from "./icons";
 import "./style.css";
 
 const pupilGate = document.getElementById("pupil-gate") as HTMLDivElement;
@@ -82,7 +83,11 @@ function renderPupilList(): void {
     const li = document.createElement("li");
     const a = document.createElement("a");
     a.href = `#/report/${encodeURIComponent(id)}`;
-    a.textContent = `🧒 ${id}`;
+    // Icon markup is a trusted static constant; the pupil name is
+    // untrusted free text, so it's appended as a text node rather than
+    // interpolated into innerHTML.
+    a.insertAdjacentHTML("beforeend", ICON_PERSON);
+    a.append(document.createTextNode(id));
     li.append(a);
     ul.append(li);
   }
@@ -103,7 +108,7 @@ function renderPupilDetail(pupilId: string): void {
   const noteSection = document.createElement("div");
   noteSection.className = "report-section report-section--pattern";
   const noteTitle = document.createElement("h2");
-  noteTitle.textContent = "🎯 Diagnostic note";
+  noteTitle.innerHTML = `${ICON_TARGET}Diagnostic note`;
   const noteSummary = document.createElement("p");
   noteSummary.textContent = note.summary;
   const noteRec = document.createElement("p");
@@ -120,7 +125,7 @@ function renderPupilDetail(pupilId: string): void {
   const lettersSection = document.createElement("div");
   lettersSection.className = "report-section report-section--stats";
   const lettersTitle = document.createElement("h2");
-  lettersTitle.textContent = "📊 Current per-letter confidence";
+  lettersTitle.innerHTML = `${ICON_CHART}Current per-letter confidence`;
   lettersSection.append(lettersTitle);
   for (const entry of currentState.letters) {
     const p = document.createElement("p");
