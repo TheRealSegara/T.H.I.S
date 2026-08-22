@@ -11,12 +11,17 @@ import {
   savePupilData,
   type PersistedLetterState,
 } from "./persistence";
+import { buildSessionSummary, describeFlag, type SessionSummaryData } from "./session-summary";
 import "./style.css";
 
 const pupilGate = document.getElementById("pupil-gate") as HTMLDivElement;
 const pupilInput = document.getElementById("pupil-input") as HTMLInputElement;
 const pupilStartBtn = document.getElementById("pupil-start-btn") as HTMLButtonElement;
 const sessionView = document.getElementById("session-view") as HTMLDivElement;
+const practiceView = document.getElementById("practice-view") as HTMLDivElement;
+const summaryView = document.getElementById("summary-view") as HTMLDivElement;
+const summaryListEl = document.getElementById("summary-list") as HTMLUListElement;
+const newSessionBtn = document.getElementById("new-session-btn") as HTMLButtonElement;
 
 const canvas = document.getElementById("trace-canvas") as HTMLCanvasElement;
 const stageEl = document.getElementById("stage-label") as HTMLSpanElement;
@@ -34,8 +39,42 @@ pupilStartBtn.addEventListener("click", () => {
   if (!pupilId) return;
   pupilGate.hidden = true;
   sessionView.hidden = false;
+  practiceView.hidden = false;
+  summaryView.hidden = true;
   startSession(pupilId);
 });
+
+newSessionBtn.addEventListener("click", () => {
+  location.reload();
+});
+
+function renderSummary(summary: SessionSummaryData): void {
+  summaryListEl.innerHTML = "";
+  for (const entry of summary.letters) {
+    const li = document.createElement("li");
+    li.className = "summary-row";
+
+    const letterSpan = document.createElement("span");
+    letterSpan.className = "summary-letter";
+    letterSpan.textContent = entry.letter;
+
+    const details = document.createElement("div");
+    details.className = "summary-details";
+
+    const confidenceP = document.createElement("span");
+    confidenceP.className = "summary-confidence";
+    confidenceP.textContent =
+      entry.confidence === null ? "No attempts recorded" : `${Math.round(entry.confidence * 100)}% confident`;
+
+    const flagP = document.createElement("span");
+    flagP.className = `summary-flag flag-${entry.flag}`;
+    flagP.textContent = describeFlag(entry.flag);
+
+    details.append(confidenceP, flagP);
+    li.append(letterSpan, details);
+    summaryListEl.append(li);
+  }
+}
 
 function startSession(pupilId: string): void {
   const pupilData = loadPupilData(pupilId);
@@ -65,7 +104,9 @@ function startSession(pupilId: string): void {
     pointCountEl.textContent = "Last stroke points: 0";
   }
 
-  function finalizeSession(): void {
+  function finalizeSession(): SessionSummaryData {
+    const summary = buildSessionSummary(pupilId, pupilData.sessionCount + 1, tracker);
+
     const letters: typeof pupilData.letters = {};
     for (const letter of ALL_LETTERS) {
       const state = tracker.exportState()[letter];
@@ -81,34 +122,19 @@ function startSession(pupilId: string): void {
       letters,
       sessionLog: [
         ...pupilData.sessionLog,
-        {
-          completedAt: Date.now(),
-          letters: Object.fromEntries(
-            ALL_LETTERS.map((letter) => [letter, { confidence: tracker.getConfidence(letter), flag: tracker.getFlag(letter) }]),
-          ),
-        },
+        { completedAt: Date.now(), letters: Object.fromEntries(summary.letters.map((e) => [e.letter, { confidence: e.confidence, flag: e.flag }])) },
       ].slice(-20),
     });
+
+    return summary;
   }
 
   function showCurrentPrompt(): void {
     if (flow.isComplete()) {
-      stageEl.textContent = "Stage: summary";
-      letterEl.textContent = "Session complete";
-      nextBtn.disabled = true;
-      capture.clear();
-      capture.setGuide([], { width: 1, height: 1 });
-      resetCounters();
-      finalizeSession();
-      console.log(
-        "Session finished for",
-        pupilId,
-        (["b", "d", "p", "q"] as LetterId[]).map((letter) => ({
-          letter,
-          confidence: tracker.getConfidence(letter),
-          flag: tracker.getFlag(letter),
-        })),
-      );
+      const summary = finalizeSession();
+      practiceView.hidden = true;
+      summaryView.hidden = false;
+      renderSummary(summary);
       return;
     }
 

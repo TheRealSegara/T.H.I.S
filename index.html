@@ -14,16 +14,23 @@
         <button id="pupil-start-btn">Start session</button>
       </div>
       <div id="session-view" hidden>
-        <div id="prompt-bar">
-          <span id="stage-label">Stage: warmup</span>
-          <span id="letter-label">Trace: b</span>
-          <button id="next-btn" disabled>Next</button>
+        <div id="practice-view">
+          <div id="prompt-bar">
+            <span id="stage-label">Stage: warmup</span>
+            <span id="letter-label">Trace: b</span>
+            <button id="next-btn" disabled>Next</button>
+          </div>
+          <canvas id="trace-canvas"></canvas>
+          <div id="debug-panel">
+            <span id="stroke-count">Strokes: 0</span>
+            <span id="point-count">Last stroke points: 0</span>
+            <button id="clear-btn">Clear</button>
+          </div>
         </div>
-        <canvas id="trace-canvas"></canvas>
-        <div id="debug-panel">
-          <span id="stroke-count">Strokes: 0</span>
-          <span id="point-count">Last stroke points: 0</span>
-          <button id="clear-btn">Clear</button>
+        <div id="summary-view" hidden>
+          <h1>Session Summary</h1>
+          <ul id="summary-list"></ul>
+          <button id="new-session-btn">Start another session</button>
         </div>
       </div>
     </div>
