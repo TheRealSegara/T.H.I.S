@@ -208,18 +208,17 @@ export class StrokeCapture {
     return this.guideStrokes.map((stroke) => stroke.map((p) => this.mapGuidePoint(p, scale, offsetX, offsetY)));
   }
 
-  private drawGuideArrow(stroke: GuideStroke, scale: number, offsetX: number, offsetY: number): void {
-    if (stroke.length < 2) return;
-    const mid = Math.floor(stroke.length / 2);
-    const a = this.mapGuidePoint(stroke[Math.max(0, mid - 1)], scale, offsetX, offsetY);
-    const b = this.mapGuidePoint(stroke[Math.min(stroke.length - 1, mid + 1)], scale, offsetX, offsetY);
+  private drawArrowAt(stroke: GuideStroke, index: number, scale: number, offsetX: number, offsetY: number): void {
+    const prevIdx = Math.max(0, index - 1);
+    const nextIdx = Math.min(stroke.length - 1, index + 1);
+    const a = this.mapGuidePoint(stroke[prevIdx], scale, offsetX, offsetY);
+    const b = this.mapGuidePoint(stroke[nextIdx], scale, offsetX, offsetY);
     const angle = Math.atan2(b.y - a.y, b.x - a.x);
-    const cx = (a.x + b.x) / 2;
-    const cy = (a.y + b.y) / 2;
+    const at = this.mapGuidePoint(stroke[index], scale, offsetX, offsetY);
     const size = 7;
 
     this.ctx.save();
-    this.ctx.translate(cx, cy);
+    this.ctx.translate(at.x, at.y);
     this.ctx.rotate(angle);
     this.ctx.beginPath();
     this.ctx.moveTo(size, 0);
@@ -228,6 +227,38 @@ export class StrokeCapture {
     this.ctx.closePath();
     this.ctx.fill();
     this.ctx.restore();
+  }
+
+  /**
+   * Straight strokes (the stem) get one arrowhead right at the end,
+   * pointing the direction of travel - matching the physical Development
+   * Sheet's downward arrow at the bottom of the stem. Curved strokes (the
+   * bowl) get a couple of arrows distributed along the path instead, since
+   * a single point can't show a curve's rotational direction the way it
+   * can a straight line. Straightness is measured rather than hardcoded
+   * per letter, so this keeps working if the reference geometry changes.
+   */
+  private drawGuideArrows(stroke: GuideStroke, scale: number, offsetX: number, offsetY: number): void {
+    if (stroke.length < 3) return;
+
+    const first = stroke[0];
+    const last = stroke[stroke.length - 1];
+    const straightLineDist = Math.hypot(last.x - first.x, last.y - first.y);
+    let pathLength = 0;
+    for (let i = 1; i < stroke.length; i++) {
+      pathLength += Math.hypot(stroke[i].x - stroke[i - 1].x, stroke[i].y - stroke[i - 1].y);
+    }
+    const isStraight = pathLength > 0 && straightLineDist / pathLength > 0.9;
+
+    if (isStraight) {
+      this.drawArrowAt(stroke, stroke.length - 1, scale, offsetX, offsetY);
+      return;
+    }
+
+    for (const t of [0.3, 0.7]) {
+      const index = Math.round(t * (stroke.length - 1));
+      this.drawArrowAt(stroke, index, scale, offsetX, offsetY);
+    }
   }
 
   private drawGuide(): void {
@@ -263,10 +294,10 @@ export class StrokeCapture {
       this.ctx.fill();
     }
 
-    // The most-guided levels also get a mid-stroke arrowhead - the
-    // "textured arrows" cue from the physical Development Sheet.
+    // The most-guided levels also get directional arrows - the "textured
+    // arrows" cue from the physical Development Sheet.
     if (style.showArrow) {
-      for (const stroke of this.guideStrokes) this.drawGuideArrow(stroke, scale, offsetX, offsetY);
+      for (const stroke of this.guideStrokes) this.drawGuideArrows(stroke, scale, offsetX, offsetY);
     }
 
     this.ctx.restore();
