@@ -12,6 +12,7 @@ import {
   type PersistedLetterState,
 } from "./persistence";
 import { buildSessionSummary, describeFlag, type SessionSummaryData } from "./session-summary";
+import { buildPupilReport, listPupilIds } from "./report";
 import "./style.css";
 
 const pupilGate = document.getElementById("pupil-gate") as HTMLDivElement;
@@ -22,6 +23,12 @@ const practiceView = document.getElementById("practice-view") as HTMLDivElement;
 const summaryView = document.getElementById("summary-view") as HTMLDivElement;
 const summaryListEl = document.getElementById("summary-list") as HTMLUListElement;
 const newSessionBtn = document.getElementById("new-session-btn") as HTMLButtonElement;
+const summaryReportLink = document.getElementById("summary-report-link") as HTMLAnchorElement;
+
+const reportView = document.getElementById("report-view") as HTMLDivElement;
+const reportBackLink = document.getElementById("report-back-link") as HTMLAnchorElement;
+const reportPupilList = document.getElementById("report-pupil-list") as HTMLDivElement;
+const reportPupilDetail = document.getElementById("report-pupil-detail") as HTMLDivElement;
 
 const canvas = document.getElementById("trace-canvas") as HTMLCanvasElement;
 const stageEl = document.getElementById("stage-label") as HTMLSpanElement;
@@ -47,6 +54,101 @@ pupilStartBtn.addEventListener("click", () => {
 newSessionBtn.addEventListener("click", () => {
   location.reload();
 });
+
+function parseReportRoute(hash: string): { pupilId: string | null } | null {
+  const match = hash.match(/^#\/report(?:\/(.+))?$/);
+  if (!match) return null;
+  return { pupilId: match[1] ? decodeURIComponent(match[1]) : null };
+}
+
+function renderPupilList(): void {
+  reportPupilDetail.hidden = true;
+  reportPupilList.hidden = false;
+  reportPupilList.innerHTML = "";
+
+  const pupils = listPupilIds();
+  if (pupils.length === 0) {
+    const p = document.createElement("p");
+    p.textContent = "No pupils recorded on this device yet.";
+    reportPupilList.append(p);
+    return;
+  }
+
+  const ul = document.createElement("ul");
+  for (const id of pupils) {
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = `#/report/${encodeURIComponent(id)}`;
+    a.textContent = id;
+    li.append(a);
+    ul.append(li);
+  }
+  reportPupilList.append(ul);
+}
+
+function renderPupilDetail(pupilId: string): void {
+  reportPupilList.hidden = true;
+  reportPupilDetail.hidden = false;
+  reportPupilDetail.innerHTML = "";
+
+  const { pupilData, currentState, note } = buildPupilReport(pupilId);
+
+  const heading = document.createElement("h2");
+  heading.textContent = `${pupilId} — ${pupilData.sessionCount} session${pupilData.sessionCount === 1 ? "" : "s"}`;
+  reportPupilDetail.append(heading);
+
+  const noteSection = document.createElement("div");
+  noteSection.className = "report-section";
+  const noteTitle = document.createElement("h2");
+  noteTitle.textContent = "Diagnostic note";
+  const noteSummary = document.createElement("p");
+  noteSummary.textContent = note.summary;
+  const noteRec = document.createElement("p");
+  noteRec.textContent = note.recommendation;
+  const noteList = document.createElement("ul");
+  for (const line of note.perLetterNotes) {
+    const li = document.createElement("li");
+    li.textContent = line;
+    noteList.append(li);
+  }
+  noteSection.append(noteTitle, noteSummary, noteRec, noteList);
+  reportPupilDetail.append(noteSection);
+
+  const lettersSection = document.createElement("div");
+  lettersSection.className = "report-section";
+  const lettersTitle = document.createElement("h2");
+  lettersTitle.textContent = "Current per-letter confidence";
+  lettersSection.append(lettersTitle);
+  for (const entry of currentState.letters) {
+    const p = document.createElement("p");
+    p.className = "report-trend";
+    p.textContent = `${entry.letter}: ${entry.confidence === null ? "no data" : Math.round(entry.confidence * 100) + "%"} — ${describeFlag(entry.flag)}`;
+    lettersSection.append(p);
+  }
+  reportPupilDetail.append(lettersSection);
+}
+
+function renderRoute(): void {
+  const route = parseReportRoute(location.hash);
+
+  if (route) {
+    pupilGate.hidden = true;
+    sessionView.hidden = true;
+    reportView.hidden = false;
+    reportBackLink.href = route.pupilId ? "#/report" : "#";
+
+    if (route.pupilId) renderPupilDetail(route.pupilId);
+    else renderPupilList();
+    return;
+  }
+
+  reportView.hidden = true;
+  sessionView.hidden = true;
+  pupilGate.hidden = false;
+}
+
+window.addEventListener("hashchange", renderRoute);
+renderRoute();
 
 function renderSummary(summary: SessionSummaryData): void {
   summaryListEl.innerHTML = "";
@@ -134,6 +236,7 @@ function startSession(pupilId: string): void {
       const summary = finalizeSession();
       practiceView.hidden = true;
       summaryView.hidden = false;
+      summaryReportLink.href = `#/report/${encodeURIComponent(pupilId)}`;
       renderSummary(summary);
       return;
     }

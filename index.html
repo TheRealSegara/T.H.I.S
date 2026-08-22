@@ -12,6 +12,7 @@
         <label for="pupil-input">Pupil name</label>
         <input id="pupil-input" type="text" placeholder="e.g. Ali" autocomplete="off" />
         <button id="pupil-start-btn">Start session</button>
+        <a id="gate-report-link" href="#/report">Teacher report</a>
       </div>
       <div id="session-view" hidden>
         <div id="practice-view">
@@ -31,7 +32,17 @@
           <h1>Session Summary</h1>
           <ul id="summary-list"></ul>
           <button id="new-session-btn">Start another session</button>
+          <a id="summary-report-link" href="#">View teacher report for this pupil</a>
         </div>
+      </div>
+      <div id="report-view" hidden>
+        <div id="report-header">
+          <a id="report-back-link" href="#">&larr; Back</a>
+          <h1>Teacher Report</h1>
+        </div>
+        <p id="report-note">No login, single device: this report reads whatever this tablet has recorded, so it's only reachable on the same device the pupil practiced on.</p>
+        <div id="report-pupil-list"></div>
+        <div id="report-pupil-detail" hidden></div>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
