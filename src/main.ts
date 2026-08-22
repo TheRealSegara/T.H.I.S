@@ -26,6 +26,7 @@ const summaryListEl = document.getElementById("summary-list") as HTMLUListElemen
 const newSessionBtn = document.getElementById("new-session-btn") as HTMLButtonElement;
 const summaryReportLink = document.getElementById("summary-report-link") as HTMLAnchorElement;
 
+const appEl = document.getElementById("app") as HTMLDivElement;
 const reportView = document.getElementById("report-view") as HTMLDivElement;
 const reportBackLink = document.getElementById("report-back-link") as HTMLAnchorElement;
 const reportPupilList = document.getElementById("report-pupil-list") as HTMLDivElement;
@@ -81,7 +82,7 @@ function renderPupilList(): void {
     const li = document.createElement("li");
     const a = document.createElement("a");
     a.href = `#/report/${encodeURIComponent(id)}`;
-    a.textContent = id;
+    a.textContent = `🧒 ${id}`;
     li.append(a);
     ul.append(li);
   }
@@ -100,9 +101,9 @@ function renderPupilDetail(pupilId: string): void {
   reportPupilDetail.append(heading);
 
   const noteSection = document.createElement("div");
-  noteSection.className = "report-section";
+  noteSection.className = "report-section report-section--pattern";
   const noteTitle = document.createElement("h2");
-  noteTitle.textContent = "Diagnostic note";
+  noteTitle.textContent = "🎯 Diagnostic note";
   const noteSummary = document.createElement("p");
   noteSummary.textContent = note.summary;
   const noteRec = document.createElement("p");
@@ -117,9 +118,9 @@ function renderPupilDetail(pupilId: string): void {
   reportPupilDetail.append(noteSection);
 
   const lettersSection = document.createElement("div");
-  lettersSection.className = "report-section";
+  lettersSection.className = "report-section report-section--stats";
   const lettersTitle = document.createElement("h2");
-  lettersTitle.textContent = "Current per-letter confidence";
+  lettersTitle.textContent = "📊 Current per-letter confidence";
   lettersSection.append(lettersTitle);
   for (const entry of currentState.letters) {
     const p = document.createElement("p");
@@ -132,6 +133,7 @@ function renderPupilDetail(pupilId: string): void {
 
 function renderRoute(): void {
   const route = parseReportRoute(location.hash);
+  appEl.classList.toggle("context-teacher", route !== null);
 
   if (route) {
     pupilGate.hidden = true;
