@@ -1,3 +1,5 @@
+import type { GuideStroke } from "./letters";
+
 export interface Point {
   x: number;
   y: number;
@@ -8,6 +10,11 @@ export type Stroke = Point[];
 
 export interface StrokeCaptureOptions {
   onStrokeComplete?: (stroke: Stroke, allStrokes: Stroke[]) => void;
+}
+
+export interface GuideBounds {
+  width: number;
+  height: number;
 }
 
 /**
@@ -21,6 +28,8 @@ export class StrokeCapture {
   private strokes: Stroke[] = [];
   private currentStroke: Point[] | null = null;
   private options: StrokeCaptureOptions;
+  private guideStrokes: GuideStroke[] = [];
+  private guideBounds: GuideBounds = { width: 1, height: 1 };
 
   constructor(canvas: HTMLCanvasElement, options: StrokeCaptureOptions = {}) {
     this.canvas = canvas;
@@ -45,6 +54,12 @@ export class StrokeCapture {
 
   getStrokes(): Stroke[] {
     return this.strokes;
+  }
+
+  setGuide(strokes: GuideStroke[], bounds: GuideBounds): void {
+    this.guideStrokes = strokes;
+    this.guideBounds = bounds;
+    this.redraw();
   }
 
   clear(): void {
@@ -125,23 +140,48 @@ export class StrokeCapture {
     this.endStroke();
   };
 
+  private mapGuidePoint(p: { x: number; y: number }, scale: number, offsetX: number, offsetY: number) {
+    return { x: offsetX + p.x * scale, y: offsetY + p.y * scale };
+  }
+
   private drawGuide(): void {
-    // Placeholder guide outline proving the capture pipeline works.
-    // Replaced with real per-letter reference paths (b/d/p/q) in Phase 2.
+    if (this.guideStrokes.length === 0) return;
+
     const rect = this.canvas.getBoundingClientRect();
-    const cx = rect.width / 2;
-    const cy = rect.height / 2;
-    const r = Math.min(rect.width, rect.height) * 0.25;
+    const paddingRatio = 0.15;
+    const availW = rect.width * (1 - paddingRatio * 2);
+    const availH = rect.height * (1 - paddingRatio * 2);
+    const scale = Math.min(availW / this.guideBounds.width, availH / this.guideBounds.height);
+    const glyphW = this.guideBounds.width * scale;
+    const glyphH = this.guideBounds.height * scale;
+    const offsetX = (rect.width - glyphW) / 2;
+    const offsetY = (rect.height - glyphH) / 2;
 
     this.ctx.save();
     this.ctx.strokeStyle = "#c9c2b2";
     this.ctx.lineWidth = 3;
     this.ctx.setLineDash([6, 8]);
-    this.ctx.beginPath();
-    this.ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    this.ctx.moveTo(cx + r, cy - r * 1.6);
-    this.ctx.lineTo(cx + r, cy + r);
-    this.ctx.stroke();
+    for (const stroke of this.guideStrokes) {
+      this.ctx.beginPath();
+      stroke.forEach((p, i) => {
+        const mapped = this.mapGuidePoint(p, scale, offsetX, offsetY);
+        if (i === 0) this.ctx.moveTo(mapped.x, mapped.y);
+        else this.ctx.lineTo(mapped.x, mapped.y);
+      });
+      this.ctx.stroke();
+    }
+    this.ctx.setLineDash([]);
+
+    // Mark each stroke's start point so the intended drawing direction is
+    // visible, not just the outline shape.
+    this.ctx.fillStyle = "#7a9c6e";
+    for (const stroke of this.guideStrokes) {
+      if (stroke.length === 0) continue;
+      const start = this.mapGuidePoint(stroke[0], scale, offsetX, offsetY);
+      this.ctx.beginPath();
+      this.ctx.arc(start.x, start.y, 5, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
     this.ctx.restore();
   }
 
