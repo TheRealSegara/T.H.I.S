@@ -17,6 +17,46 @@ body {
   flex-direction: column;
 }
 
+#pupil-gate {
+  height: 100%;
+  padding: 1rem;
+}
+
+#pupil-gate:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+#pupil-gate input {
+  padding: 0.6rem 0.8rem;
+  font-size: 1.1rem;
+  border: 1px solid #c7c2b6;
+  border-radius: 6px;
+  width: min(16rem, 80vw);
+}
+
+#pupil-gate button {
+  padding: 0.6rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  background: #7a9c6e;
+  color: #fff;
+  font-size: 1rem;
+}
+
+#session-view {
+  flex: 1;
+  min-height: 0;
+}
+
+#session-view:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+}
+
 #prompt-bar {
   display: flex;
   align-items: center;

@@ -8,16 +8,23 @@
   </head>
   <body>
     <div id="app">
-      <div id="prompt-bar">
-        <span id="stage-label">Stage: warmup</span>
-        <span id="letter-label">Trace: b</span>
-        <button id="next-btn" disabled>Next</button>
+      <div id="pupil-gate">
+        <label for="pupil-input">Pupil name</label>
+        <input id="pupil-input" type="text" placeholder="e.g. Ali" autocomplete="off" />
+        <button id="pupil-start-btn">Start session</button>
       </div>
-      <canvas id="trace-canvas"></canvas>
-      <div id="debug-panel">
-        <span id="stroke-count">Strokes: 0</span>
-        <span id="point-count">Last stroke points: 0</span>
-        <button id="clear-btn">Clear</button>
+      <div id="session-view" hidden>
+        <div id="prompt-bar">
+          <span id="stage-label">Stage: warmup</span>
+          <span id="letter-label">Trace: b</span>
+          <button id="next-btn" disabled>Next</button>
+        </div>
+        <canvas id="trace-canvas"></canvas>
+        <div id="debug-panel">
+          <span id="stroke-count">Strokes: 0</span>
+          <span id="point-count">Last stroke points: 0</span>
+          <button id="clear-btn">Clear</button>
+        </div>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
