@@ -24,6 +24,9 @@ export interface GuideBounds {
 // same reference geometry) - no new letter-path data is needed.
 export const GUIDANCE_LEVEL_COUNT = 5;
 
+// How much the guide grows while the pupil is actively touching it.
+const GUIDE_TOUCH_SCALE = 1.05;
+
 interface GuidanceStyle {
   dash: [number, number];
   opacity: number;
@@ -52,6 +55,7 @@ export class StrokeCapture {
   private guideStrokes: GuideStroke[] = [];
   private guideBounds: GuideBounds = { width: 1, height: 1 };
   private guideLevel = 0;
+  private isTracingActive = false;
 
   constructor(canvas: HTMLCanvasElement, options: StrokeCaptureOptions = {}) {
     this.canvas = canvas;
@@ -110,8 +114,17 @@ export class StrokeCapture {
     };
   }
 
+  private vibrate(durationMs: number): void {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(durationMs);
+    }
+  }
+
   private startStroke(point: Point): void {
     this.currentStroke = [point];
+    this.isTracingActive = true;
+    this.vibrate(10);
+    this.redraw();
   }
 
   private extendStroke(point: Point): void {
@@ -121,13 +134,16 @@ export class StrokeCapture {
   }
 
   private endStroke(): void {
+    this.isTracingActive = false;
     if (!this.currentStroke || this.currentStroke.length === 0) {
       this.currentStroke = null;
+      this.redraw();
       return;
     }
     const finished = this.currentStroke;
     this.strokes.push(finished);
     this.currentStroke = null;
+    this.vibrate(20);
     this.options.onStrokeComplete?.(finished, this.strokes);
     this.redraw();
   }
@@ -173,7 +189,14 @@ export class StrokeCapture {
     const paddingRatio = 0.15;
     const availW = rect.width * (1 - paddingRatio * 2);
     const availH = rect.height * (1 - paddingRatio * 2);
-    const scale = Math.min(availW / this.guideBounds.width, availH / this.guideBounds.height);
+    const baseScale = Math.min(availW / this.guideBounds.width, availH / this.guideBounds.height);
+    // Subtle grow while actively touching, like the letter is being
+    // pressed into a mold. Scale only - dash pattern/opacity (the actual
+    // guidance level) are untouched, so this never restores visibility a
+    // fading level has deliberately taken away, and by the time a trace
+    // is submitted the touch has already ended and this has settled back
+    // to 1, so it never affects the geometry used for scoring.
+    const scale = baseScale * (this.isTracingActive ? GUIDE_TOUCH_SCALE : 1);
     const glyphW = this.guideBounds.width * scale;
     const glyphH = this.guideBounds.height * scale;
     return { scale, offsetX: (rect.width - glyphW) / 2, offsetY: (rect.height - glyphH) / 2 };
