@@ -13,7 +13,8 @@ import {
 } from "./persistence";
 import { buildSessionSummary, describeFlag, type SessionSummaryData } from "./session-summary";
 import { buildPupilReport, listPupilIds } from "./report";
-import { STAGE_LABELS, letterPrompt, pairOf } from "./copy";
+import { STAGE_LABELS, STAGE_VOICE_LINES, letterPrompt, pairOf } from "./copy";
+import type { SessionStage } from "./session-flow";
 import { ICON_PERSON, ICON_TARGET, ICON_CHART } from "./icons";
 import "./style.css";
 
@@ -41,6 +42,7 @@ const strokeCountEl = document.getElementById("stroke-count") as HTMLSpanElement
 const pointCountEl = document.getElementById("point-count") as HTMLSpanElement;
 const clearBtn = document.getElementById("clear-btn") as HTMLButtonElement;
 const pieceProgressEl = document.getElementById("piece-progress") as HTMLDivElement;
+const voiceTextEl = document.getElementById("voice-text") as HTMLSpanElement;
 
 const lastPupil = getLastPupilId();
 if (lastPupil) pupilInput.value = lastPupil;
@@ -211,6 +213,13 @@ function startSession(pupilId: string): void {
   });
 
   const completedLetters: LetterId[] = [];
+  let lastVoiceStage: SessionStage | null = null;
+
+  function updateVoiceLine(stage: SessionStage): void {
+    if (stage === lastVoiceStage) return;
+    lastVoiceStage = stage;
+    voiceTextEl.textContent = STAGE_VOICE_LINES[stage];
+  }
 
   function resetCounters(): void {
     strokeCountEl.textContent = "Strokes: 0";
@@ -262,7 +271,9 @@ function startSession(pupilId: string): void {
     }
 
     const letter = flow.getCurrentLetter() as LetterId;
-    stageEl.textContent = STAGE_LABELS[flow.getStage()];
+    const stage = flow.getStage();
+    stageEl.textContent = STAGE_LABELS[stage];
+    updateVoiceLine(stage);
     letterEl.textContent = letterPrompt(letter);
     practiceView.classList.toggle("pair-bd", pairOf(letter) === "bd");
     practiceView.classList.toggle("pair-pq", pairOf(letter) === "pq");

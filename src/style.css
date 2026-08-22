@@ -382,6 +382,50 @@ svg {
   background: linear-gradient(180deg, var(--color-pair-pq) 0%, var(--color-pair-pq-dark) 100%);
 }
 
+/* Speech-bubble line shown once per stage change (see STAGE_VOICE_LINES
+   in copy.ts) - never updated per-attempt, so it can't nudge tracing
+   behaviour the way a live coach would. Deliberately neutral, not
+   pair-tinted: it updates on a different cadence than the letter
+   prompt, so tying its colour to the current letter would fight the
+   pair-coding elsewhere instead of reinforcing it. */
+#voice-bubble {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  max-width: calc(100% - 2rem);
+  margin: 0.6rem 1rem 0;
+  padding: 0.5rem 0.9rem;
+  background: var(--color-surface);
+  border: 2px solid var(--color-neutral-tint);
+  border-radius: var(--radius-lg);
+  position: relative;
+}
+
+#voice-bubble::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 20px;
+  width: 12px;
+  height: 12px;
+  background: var(--color-surface);
+  border-left: 2px solid var(--color-neutral-tint);
+  border-top: 2px solid var(--color-neutral-tint);
+  transform: rotate(45deg);
+}
+
+.voice-icon {
+  flex-shrink: 0;
+  display: flex;
+}
+
+#voice-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-ink-soft);
+}
+
 #piece-progress {
   display: flex;
   flex-wrap: wrap;
